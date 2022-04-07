@@ -5,16 +5,16 @@ from datetime import date
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from forms import CreatePostForm, RegistrationForm, LoginForm,CommentForm
 from flask_gravatar import Gravatar
-from flask_bcrypt import Bcrypt
 from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 ckeditor = CKEditor(app)
 Bootstrap(app)
-bcrypt = Bcrypt(app)
 gravatar = Gravatar(app, size=100, rating='g', default='retro', force_default=False, force_lower=False, use_ssl=False, base_url=None)
 
 # CONNECT TO DB
@@ -95,7 +95,7 @@ def register():
         if User.query.filter_by(email=email).first():
             flash("Email already Taken!")
 
-        hashed_password = bcrypt.generate_password_hash(password=password, rounds=12)
+        hashed_password = generate_password_hash(password=password, method="pbkdf2:sha256", salt_length=12)
         new_user = User(
             email=email,
             password=hashed_password,
@@ -113,7 +113,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
-            if bcrypt.check_password_hash(user.password, form.password.data):
+            if check_password_hash(user.password, form.password.data):
                 login_user(user)
                 print("logged in.")
                 return redirect(url_for("get_all_posts"))
